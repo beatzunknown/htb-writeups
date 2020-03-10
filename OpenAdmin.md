@@ -113,3 +113,21 @@ I check what we have with `ls` and we have attained the user flag:
 ![user flag](images/openadmin/user_flag.PNG)
 
 ## Getting the Root Flag
+
+Note: At this point I was beyond out of my depth since I don't know how to perform privilege escalation. So I watched a few walkthroughs of older retired HTB machines and read about SUID file permissions which grant an application root access when executed by a normal user.
+
+So I tried to find the files with SUID permissions:
+
+![joanna suid](images/openadmin/joanna_suid.PNG)
+
+However this didn't tell me much. I needed a way to see what `joanna`'s permissions allow her to do. Apparently this is exactly what the `sudo -l` command was made to do, so I used that:
+
+![joanna sudo](images/openadmin/joanna_sudo.PNG)
+
+As it turns out we have the ability to run a single command as root without needing to enter the password. In this case it is opening a file with `nano`. This implies that through the `nano` editor I'll be able to access the `root` user's files since I now have the permissions. In nano I did `ctrl+r` to read in a file and then `ctrl+t` to select a file. Through here I could see that there was a `root.txt`:
+
+![joanna ctrl t](images/openadmin/joanna_ctrl_t.PNG)
+
+I selected the file and it read in the contents of `root.txt` and placed it above the contents of `/opt/priv`. The root flag has been attained.
+
+![root flag](images/openadmin/root_flag.PNG)
