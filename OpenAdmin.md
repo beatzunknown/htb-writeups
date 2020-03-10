@@ -1,7 +1,6 @@
 # OpenAdmin
 ## About the Box
-The box is running on 10.10.10.171.dsads
-ihdfiuoa
+The OpenAdmin box is an easy level Linux box worth 20 points. It was running on 10.10.10.171.
 
 ## Recon/Enumeration
 Run an initial `nmap` scan to check for open ports and services:
@@ -131,3 +130,10 @@ As it turns out we have the ability to run a single command as root without need
 I selected the file and it read in the contents of `root.txt` and placed it above the contents of `/opt/priv`. The root flag has been attained.
 
 ![root flag](images/openadmin/root_flag.PNG)
+
+## Reflection & What I Learnt
+What I found unexpected was that the user flag took much longer to attain than the root flag. Being my first HackTheBox machine, it is obvious that I learnt a lot from this, since I basically had to research and learn something new for each of the steps.
+A common recurring issue that I faced was that I would often get stuck at a point where I would be missing literally the smallest detail. For example I spent a lot of time trying to get the exploit working (to get the reverse shell) which was because my argument was wrong. I spent a long time trying "http://10.10.10.171/ona" which wouldn't work but instead "http://10.10.10.171/ona/" would work. This is because "/ona" is technically still a path which refers to "/ona/index.php" but I just didn't realise this.
+I also got stuck for a while because I didn't know the `ssh` command could take in a parameter for an RSA key file.
+But this is why I have enjoyed hacking this box. I have a lot of holes in my knowledge and this problem forced me to fill these holes (and otherwise punishes me).
+I've noticed a lot of things are pretty standard such as the initial recon with `nmap` and `gobuster` so the next box I attempt, I should be more confident with these routine steps.
