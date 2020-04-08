@@ -1,0 +1,44 @@
+Tools
+
+ssh - secure shell protocol. -i to specify identity or private key for authentication (rsa, dsa or ecdsa)
+nmap - checks for open ports and run scripts to enumerate information about what is on each ports as well as server information. -sV for version detection, -sC for script scanning with default scripts, --script= to specify script, -oA basename to store scan results
+gobuster - uses a wordlist to check for files and directories in the server structure (brute force)
+searchsploit - searches for exploits matching a query on exploit-db
+metasploit - runs exploits for you
+netcat - tool for reading and writing over a connection using tcp or udp
+ghidra - decomposing and reverse engineering applications and binaries
+pwntools - a python CTF framework and exploit development library
+objdump - disassembles libraries and apps. pipe with get to search through the assembly. -D for disassemble, -t to view symbol table.
+when in pwntools drop and ssh key in folder .ssh and in authorized_keys file. this gives to ssh access to the actual server
+exiftool - get file information like timestamps
+keepass2john - john the ripper module for cracking keepass db
+dos2unix - converts dos based scripts to unix
+netstat - displays network info like current connections, routing tables, etc. -t for tcp, -u for udp, -l for listening ports
+ssh2john - john the ripper script for converting ssh private key to workable format
+john - password cracker. --format= for hash format, --wordlist= for wordlist.
+chmod - change file mode bits (file perms)
+pspy32 - monitor processes running in background
+smbclient - ftp-like tool to access smb resources and shares. It is a part of the Samba suite which is the main tool to interact between Linux and Windows systems.
+impacket - python library for working with network protocols
+smbmap - enumerate samba share drives across an entire domain. -H for host
+ldapsearch - tool to search entries in an LDAP (lightweight directory access protocol) directory tree. -h for host, -x for simple authentication, -s for search scope, -b searchbase for search starting point
+crackmapexec - tool for pentesting Active Directory networks. first specify AD type (smb, etc) and host, then -u for user(list), -p for password(list), -H for password hash
+hashcat - password cracker (can use GPU). --stdout to print to stdout, -m code for hash mode/type, -r for rule file
+mp64.bin - maskprocessor which is a part of hashcat. it is a word generator that allowes per-position generation (using ?l or ?u for alpha, ?d for num, ?s for symbols, ?b for hex)
+GetADUsers.py (impacket) - script to get AD domain users and their email addresses plus last logon/last password set attributes. Needs host name, -dc-ip for domain controller IP address, -all to get info for all users, -user to specify user
+GetNPUsers.py (impacket) - script to to get TGTs for users that don't require Kerberos preauth. -dc-ip for domain controller IP address, -user to specify userlist to try and get TGTs for.
+evil-winrm (ruby) - winRM shell for pentesting and hacking. -i for ip address, -u for user, -p for password, -H for NTHash
+secretsdump.py (impacket) - script to dump stored password hashes from windows (including from SAM). argument is domain/user:password@ip_or_domain_controller
+
+Other Things
+Kerberos Authentication
+This is Windows default authorisation technology which uses crypto and third-party ticket auth. The auth process:
+1. Client requests authentication ticket (TGT or ticket-granting ticket) with a KRB_AS-REQ.
+2. The Key Distribution Center (KDC) verifies credentials and sends back TGT (encrypted using Ticket Granting Service or TGS secret key) and session key (KRB_AS-REP)
+3. Client stores TGT and when it expires the local session manage will request another TGT
+Now to request a service or resource:
+4. Client sends current TGT to TGS with Service Principal Name (SPN) of resource it wants to access
+5. KDC verifies TGT of user and that the user has access to service
+6. TGS sends valid session key for service, to the client
+7. Client forwards session key to service to prove they have access, and service grants access
+Usually in the AS-REQ the user credentials must be be required. But if kerberos preauthentication requirement is disabled then the KDC will return the TGT in the AS-REP without the need for any credential. Then the credentials can be obtained by bruteforcing the TGT and this is ASREP-Roasting.
