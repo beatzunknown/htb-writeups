@@ -49,7 +49,7 @@ Host script results:
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 332.93 seconds
 ```
-So we have Kerberos service running with Active Directory where there may potentially be SMB shares. Before anything technical let's take a look at the website:
+So we have Kerberos service running with Active Directory. Before anything technical let's take a look at the website:
 ![Home Page](images/sauna/home.png)
 After scanning through all the pages, I found something that isn't just Lorem Ipsum text. Names.
 ![Names](images/sauna/names.png)
@@ -399,6 +399,10 @@ Info: Establishing connection to remote endpoint
 And amazingly, it worked.
 
 Unfortunately after a lot of enumeration I realised we don't have any extra permission and can't access any more registries or folders than we could with `fsmith`.
+
+After spending quite a lot of time getting frustrated and making no progress I again looked to the forums for a hint and say people talking about "secrets".
+
+After some digging I found out this was in reference to another `impacket` tool `secretsdump.py` which extracts password hashes from SAM (Security Account Manager) and LSA secrets (Local Security Authority) in Windows. These are stored in the OS but generally aren't accessible from a logged in account. So I decided to give it a try.
 ```
 andrew@kali:~/htb/sauna$ secretsdump.py egotistical-bank.local/svc_loanmgr:'Moneymakestheworldgoround!'@10.10.10.175
 Impacket v0.9.21.dev1+20200312.235721.8afe4fe1 - Copyright 2020 SecureAuth Corporation
